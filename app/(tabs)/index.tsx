@@ -8,11 +8,34 @@ import Header from '@/components/Header';
 import GoalCard from '@/components/GoalCard';
 import GroupCard from '@/components/GroupCard';
 import { formatCurrency } from '@/utils/formatters';
-import { useMockData } from '@/hooks/useMockData';
+import { useSupabase } from '@/hooks/useSupabase';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { goals, groups, totalSavings } = useMockData();
+  const { goals, groups, loading, error } = useSupabase();
+  const totalSavings = goals.reduce((sum, goal) => sum + goal.saved_amount, 0);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Header title="MyContri" />
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Header title="MyContri" />
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -43,7 +66,17 @@ export default function HomeScreen() {
           ) : (
             <View style={styles.cardContainer}>
               {goals.slice(0, 2).map((goal) => (
-                <GoalCard key={goal.id} goal={goal} />
+                <GoalCard 
+                  key={goal.id} 
+                  goal={{
+                    id: goal.id,
+                    goalName: goal.name,
+                    targetAmount: goal.target_amount,
+                    savedAmount: goal.saved_amount,
+                    targetDate: new Date(goal.target_date || ''),
+                  }}
+                  onPress={() => router.push(`/goals/${goal.id}`)}
+                />
               ))}
               {goals.length > 2 && (
                 <TouchableOpacity 
@@ -82,7 +115,20 @@ export default function HomeScreen() {
           ) : (
             <View style={styles.cardContainer}>
               {groups.slice(0, 2).map((group) => (
-                <GroupCard key={group.id} group={group} />
+                <GroupCard 
+                  key={group.id} 
+                  group={{
+                    id: group.id,
+                    groupName: group.name,
+                    cycleAmount: group.cycle_amount,
+                    frequency: group.frequency,
+                    memberLimit: group.member_limit,
+                    members: [],
+                    nextPayoutDate: new Date(group.next_payout_date),
+                    inviteCode: group.invite_code,
+                  }}
+                  onPress={() => router.push(`/groups/${group.id}`)}
+                />
               ))}
               {groups.length > 2 && (
                 <TouchableOpacity 
@@ -104,6 +150,28 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 16,
+    color: Colors.textSecondary,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  errorText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 16,
+    color: Colors.error,
+    textAlign: 'center',
   },
   scrollView: {
     flex: 1,
