@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { useFonts } from 'expo-font';
 import { SplashScreen } from 'expo-router';
@@ -11,6 +12,7 @@ import {
   Inter_700Bold,
 } from '@expo-google-fonts/inter';
 import { useAuth } from '@/hooks/useAuth';
+import { Colors } from '@/constants/Colors';
 
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -33,9 +35,14 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, fontError, authLoading]);
 
-  // Return null to keep splash screen visible while fonts load
-  if (!fontsLoaded && !fontError) {
-    return null;
+  // Show loading screen instead of null to prevent unmounted component state updates
+  if (!fontsLoaded && !fontError || authLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={Colors.light.tint} />
+        <Text style={styles.loadingText}>Loading...</Text>
+      </View>
+    );
   }
 
   return (
@@ -48,3 +55,18 @@ export default function RootLayout() {
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
+    color: '#666',
+  },
+});
