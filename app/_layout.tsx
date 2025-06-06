@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, useRootNavigationState } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
@@ -20,6 +20,7 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   useFrameworkReady();
   const { loading: authLoading } = useAuth();
+  const rootNavigationState = useRootNavigationState();
 
   const [fontsLoaded, fontError] = useFonts({
     'Inter-Regular': Inter_400Regular,
@@ -28,15 +29,15 @@ export default function RootLayout() {
     'Inter-Bold': Inter_700Bold,
   });
 
-  // Hide splash screen once fonts are loaded
+  // Hide splash screen once fonts are loaded and navigation is ready
   useEffect(() => {
-    if ((fontsLoaded || fontError) && !authLoading) {
+    if ((fontsLoaded || fontError) && !authLoading && rootNavigationState?.rehydrated) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError, authLoading]);
+  }, [fontsLoaded, fontError, authLoading, rootNavigationState?.rehydrated]);
 
-  // Show loading screen instead of null to prevent unmounted component state updates
-  if (!fontsLoaded && !fontError || authLoading) {
+  // Show loading screen while waiting for fonts, auth, and navigation to be ready
+  if ((!fontsLoaded && !fontError) || authLoading || !rootNavigationState?.rehydrated) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={Colors.light.tint} />
