@@ -6,19 +6,30 @@ import { Plus } from 'lucide-react-native';
 import { Colors } from '@/constants/Colors';
 import Header from '@/components/Header';
 import GoalCard from '@/components/GoalCard';
-import { useMockData } from '@/hooks/useMockData';
+import { useSupabase } from '@/hooks/useSupabase';
 
 export default function GoalsScreen() {
   const router = useRouter();
-  const { goals } = useMockData();
+  const { goals, loading } = useSupabase();
   const [activeFilter, setActiveFilter] = useState('all');
 
   const filteredGoals = goals.filter(goal => {
     if (activeFilter === 'all') return true;
-    if (activeFilter === 'active') return goal.savedAmount < goal.targetAmount;
-    if (activeFilter === 'completed') return goal.savedAmount >= goal.targetAmount;
+    if (activeFilter === 'active') return goal.saved_amount < goal.target_amount;
+    if (activeFilter === 'completed') return goal.saved_amount >= goal.target_amount;
     return true;
   });
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Header title="Savings Goals" />
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading goals...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -30,7 +41,7 @@ export default function GoalsScreen() {
           onPress={() => setActiveFilter('all')}
         >
           <Text style={[styles.filterText, activeFilter === 'all' && styles.activeFilterText]}>
-            All
+            All ({goals.length})
           </Text>
         </TouchableOpacity>
         <TouchableOpacity 
@@ -38,7 +49,7 @@ export default function GoalsScreen() {
           onPress={() => setActiveFilter('active')}
         >
           <Text style={[styles.filterText, activeFilter === 'active' && styles.activeFilterText]}>
-            Active
+            Active ({goals.filter(g => g.saved_amount < g.target_amount).length})
           </Text>
         </TouchableOpacity>
         <TouchableOpacity 
@@ -46,7 +57,7 @@ export default function GoalsScreen() {
           onPress={() => setActiveFilter('completed')}
         >
           <Text style={[styles.filterText, activeFilter === 'completed' && styles.activeFilterText]}>
-            Completed
+            Completed ({goals.filter(g => g.saved_amount >= g.target_amount).length})
           </Text>
         </TouchableOpacity>
       </View>
@@ -66,19 +77,33 @@ export default function GoalsScreen() {
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateText}>
               {activeFilter === 'all' 
-                ? 'No savings goals yet. Add your first goal!' 
+                ? 'No savings goals yet. Create your first goal to start saving!' 
                 : activeFilter === 'active'
-                  ? 'No active goals. Add a new goal to start saving!'
-                  : 'No completed goals yet. Keep saving!'
+                  ? 'No active goals. All your goals are completed!'
+                  : 'No completed goals yet. Keep saving to reach your targets!'
               }
             </Text>
+            {activeFilter === 'all' && (
+              <TouchableOpacity 
+                style={styles.createFirstButton}
+                onPress={() => router.push('/goals/new')}
+              >
+                <Text style={styles.createFirstButtonText}>Create Your First Goal</Text>
+              </TouchableOpacity>
+            )}
           </View>
         ) : (
           <View style={styles.goalsContainer}>
             {filteredGoals.map((goal) => (
               <GoalCard 
                 key={goal.id} 
-                goal={goal} 
+                goal={{
+                  id: goal.id,
+                  goalName: goal.name,
+                  targetAmount: goal.target_amount,
+                  savedAmount: goal.saved_amount,
+                  targetDate: new Date(goal.target_date || ''),
+                }}
                 onPress={() => router.push(`/goals/${goal.id}`)}
               />
             ))}
@@ -93,6 +118,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: Colors.textSecondary,
   },
   filterContainer: {
     flexDirection: 'row',
@@ -112,8 +147,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primaryLight,
   },
   filterText: {
-    fontFamily: 'Inter-Medium',
     fontSize: 14,
+    fontWeight: '500',
     color: Colors.textSecondary,
   },
   activeFilterText: {
@@ -135,8 +170,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   addButtonText: {
-    fontFamily: 'Inter-Medium',
     fontSize: 16,
+    fontWeight: '600',
     color: Colors.white,
     marginLeft: 8,
   },
@@ -151,9 +186,21 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   emptyStateText: {
-    fontFamily: 'Inter-Regular',
     fontSize: 16,
     color: Colors.textSecondary,
     textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 16,
+  },
+  createFirstButton: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  createFirstButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.white,
   },
 });

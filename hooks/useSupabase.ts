@@ -7,8 +7,6 @@ type Tables = Database['public']['Tables'];
 type Profile = Tables['profiles']['Row'];
 type Goal = Tables['goals']['Row'];
 type Group = Tables['groups']['Row'];
-type GroupMember = Tables['group_members']['Row'];
-type Contribution = Tables['contributions']['Row'];
 
 export function useSupabase() {
   const { session } = useAuth();
@@ -20,58 +18,70 @@ export function useSupabase() {
 
   useEffect(() => {
     if (session?.user) {
-      fetchProfile();
-      fetchGoals();
-      fetchGroups();
+      fetchData();
+    } else {
+      // Reset data when user logs out
+      setProfile(null);
+      setGoals([]);
+      setGroups([]);
+      setLoading(false);
     }
   }, [session]);
 
-  async function fetchProfile() {
+  async function fetchData() {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session?.user?.id)
-        .single();
-
-      if (error) throw error;
-      setProfile(data);
+      setLoading(true);
+      setError(null);
+      
+      await Promise.all([
+        fetchProfile(),
+        fetchGoals(),
+        fetchGroups(),
+      ]);
     } catch (error: any) {
       setError(error.message);
+    } finally {
+      setLoading(false);
     }
+  }
+
+  async function fetchProfile() {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', session?.user?.id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      throw error;
+    }
+    
+    setProfile(data);
   }
 
   async function fetchGoals() {
-    try {
-      const { data, error } = await supabase
-        .from('goals')
-        .select('*')
-        .eq('user_id', session?.user?.id)
-        .order('created_at', { ascending: false });
+    const { data, error } = await supabase
+      .from('goals')
+      .select('*')
+      .eq('user_id', session?.user?.id)
+      .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setGoals(data);
-    } catch (error: any) {
-      setError(error.message);
-    }
+    if (error) throw error;
+    setGoals(data || []);
   }
 
   async function fetchGroups() {
-    try {
-      const { data, error } = await supabase
-        .from('groups')
-        .select(`
-          *,
-          group_members!inner(*)
-        `)
-        .eq('group_members.user_id', session?.user?.id)
-        .order('created_at', { ascending: false });
+    const { data, error } = await supabase
+      .from('groups')
+      .select(`
+        *,
+        group_members!inner(*)
+      `)
+      .eq('group_members.user_id', session?.user?.id)
+      .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setGroups(data);
-    } catch (error: any) {
-      setError(error.message);
-    }
+    if (error) throw error;
+    setGroups(data || []);
   }
 
   async function createGoal(goal: Omit<Tables['goals']['Insert'], 'id' | 'user_id'>) {
@@ -160,8 +170,6 @@ export function useSupabase() {
     createGoal,
     createGroup,
     addContribution,
-    refreshData: async () => {
-      await Promise.all([fetchProfile(), fetchGoals(), fetchGroups()]);
-    },
+    refreshData: fetchData,
   };
 }
