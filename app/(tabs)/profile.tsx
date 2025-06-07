@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LogOut, Settings, Edit3, Save, X } from 'lucide-react-native';
+import { LogOut, Settings, CreditCard as Edit3, Save, X } from 'lucide-react-native';
 import { Colors } from '@/constants/Colors';
 import Header from '@/components/Header';
 import { useSupabase } from '@/hooks/useSupabase';
