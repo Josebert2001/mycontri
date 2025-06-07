@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Header } from '@/components/Header';
-import { GoalCard } from '@/components/GoalCard';
+import Header from '@/components/Header';
+import GoalCard from '@/components/GoalCard';
 import { useSupabase } from '@/hooks/useSupabase';
 import { useAuth } from '@/hooks/useAuth';
 
